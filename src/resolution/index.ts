@@ -626,6 +626,7 @@ export class ReferenceResolver {
       filePath: ref.filePath || this.getFilePathFromNodeId(ref.fromNodeId),
       language: ref.language || this.getLanguageFromNodeId(ref.fromNodeId),
       rowId: ref.rowId,
+      metadata: ref.metadata,
     }));
 
     const total = refs.length;
@@ -985,6 +986,7 @@ export class ReferenceResolver {
         line: ref.original.line,
         column: ref.original.column,
         metadata: {
+          ...(ref.original.metadata ?? {}),
           confidence: ref.confidence,
           resolvedBy: ref.resolvedBy,
           // The ORIGINAL reference text (and kind, when edge-kind promotion

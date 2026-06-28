@@ -334,6 +334,8 @@ export interface UnresolvedReference {
    * call sites (#1269).
    */
   rowId?: number;
+  /** Call-site metadata (receiver, method, literal args) for calls edges */
+  metadata?: Record<string, unknown>;
 }
 
 // =============================================================================
