@@ -894,6 +894,11 @@ export class QueryBuilder {
     return rows.map(rowToNode);
   }
 
+  getAllEdges(): Edge[] {
+    const rows = this.db.prepare('SELECT * FROM edges').all() as EdgeRow[];
+    return rows.map(rowToEdge);
+  }
+
   /**
    * Stream nodes of one language whose `decorators` JSON array contains
    * `decorator`. The LIKE on the JSON text is a cheap index-free pre-filter
