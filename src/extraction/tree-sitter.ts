@@ -4554,28 +4554,32 @@ export class TreeSitterExtractor {
     }
   }
 
-  private extractStringLiteral(node: SyntaxNode): { value: string; kind: 'string' | 'raw_string' | 'template_no_expr' } | null {
+  private extractStringLiteral(node: SyntaxNode, maxLen: number = 200): { value: string; kind: 'string' | 'raw_string' | 'template_no_expr' } | null {
     const type = node.type;
 
     if (TEMPLATE_TYPES.has(type)) {
       if (node.namedChildren.some(c => INTERPOLATION_TYPES.has(c.type))) return null;
-      return { value: stripQuotes(getNodeText(node, this.source)), kind: 'template_no_expr' };
+      const v = stripQuotes(getNodeText(node, this.source));
+      return v.length > maxLen ? null : { value: v, kind: 'template_no_expr' };
     }
 
     if (RAW_STRING_TYPES.has(type)) {
-      return { value: stripQuotes(getNodeText(node, this.source)), kind: 'raw_string' };
+      const v = stripQuotes(getNodeText(node, this.source));
+      return v.length > maxLen ? null : { value: v, kind: 'raw_string' };
     }
 
     if (STRING_LITERAL_TYPES.has(type)) {
       if (node.namedChildren.some(c => INTERPOLATION_TYPES.has(c.type))) return null;
-      return { value: stripQuotes(getNodeText(node, this.source)), kind: 'string' };
+      const v = stripQuotes(getNodeText(node, this.source));
+      return v.length > maxLen ? null : { value: v, kind: 'string' };
     }
 
     if (node.namedChildCount === 1) {
       const child = node.namedChild(0);
       if (child && STRING_LITERAL_TYPES.has(child.type)) {
         if (child.namedChildren.some(c => INTERPOLATION_TYPES.has(c.type))) return null;
-        return { value: stripQuotes(getNodeText(node, this.source)), kind: 'string' };
+        const v = stripQuotes(getNodeText(node, this.source));
+        return v.length > maxLen ? null : { value: v, kind: 'string' };
       }
     }
 

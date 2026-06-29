@@ -375,41 +375,46 @@ export class CodeGraph {
     const db = DatabaseConnection.initializeInMemory();
     const queries = new QueryBuilder(db.getDb());
 
-    const orchestrator = new ExtractionOrchestrator(resolvedRoot, queries);
-    const resolver = createResolver(resolvedRoot, queries);
+    try {
+      const orchestrator = new ExtractionOrchestrator(resolvedRoot, queries);
+      const resolver = createResolver(resolvedRoot, queries);
 
-    const start = Date.now();
-    const result = await orchestrator.indexAll();
+      const start = Date.now();
+      const result = await orchestrator.indexAll();
 
-    if (result.success && result.filesIndexed > 0) {
-      resolver.initialize();
-      resolver.runPostExtract();
-      await resolver.resolveAndPersistBatched();
-      resolver.resolveChainedCallsViaConformance();
-      resolver.resolveDeferredThisMemberRefs();
+      if (result.success && result.filesIndexed > 0) {
+        resolver.initialize();
+        resolver.runPostExtract();
+        await resolver.resolveAndPersistBatched();
+        resolver.resolveChainedCallsViaConformance();
+        resolver.resolveDeferredThisMemberRefs();
+      }
+
+      const nodes = queries.getAllNodes();
+      const edges = queries.getAllEdges();
+      const durationMs = Date.now() - start;
+      const fileCount = (db.getDb().prepare('SELECT COUNT(*) AS c FROM files').get() as any)?.c ?? 0;
+
+      return {
+        success: result.success,
+        nodes,
+        edges,
+        files: fileCount,
+        errors: result.errors,
+        stats: {
+          filesIndexed: result.filesIndexed,
+          nodesCreated: nodes.length,
+          edgesCreated: edges.length,
+          durationMs,
+        },
+        traverser: new GraphTraverser(queries),
+        queries,
+        close() { db.close(); },
+      };
+    } catch (err) {
+      db.close();
+      throw err;
     }
-
-    const nodes = queries.getAllNodes();
-    const edges = queries.getAllEdges();
-    const durationMs = Date.now() - start;
-    const fileCount = (db.getDb().prepare('SELECT COUNT(*) AS c FROM files').get() as any)?.c ?? 0;
-
-    return {
-      success: result.success,
-      nodes,
-      edges,
-      files: fileCount,
-      errors: result.errors,
-      stats: {
-        filesIndexed: result.filesIndexed,
-        nodesCreated: nodes.length,
-        edgesCreated: edges.length,
-        durationMs,
-      },
-      traverser: new GraphTraverser(queries),
-      queries,
-      close() { db.close(); },
-    };
   }
 
   /**
