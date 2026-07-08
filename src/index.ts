@@ -338,8 +338,13 @@ export class CodeGraph {
         resolver.initialize();
         resolver.runPostExtract();
         await resolver.resolveAndPersistBatched();
-        resolver.resolveChainedCallsViaConformance();
-        resolver.resolveDeferredThisMemberRefs();
+        // These resolvers are async and read/write the DB. Awaiting them is
+        // mandatory: unawaited, their deferred work races the db.close() in the
+        // finally block and throws ERR_INVALID_STATE ("statement has been
+        // finalized" / "database is not open") on a later tick — uncaught. It
+        // also means nodes/edges below would be read before resolution completes.
+        await resolver.resolveChainedCallsViaConformance();
+        await resolver.resolveDeferredThisMemberRefs();
       }
 
       const nodes = queries.getAllNodes();
@@ -386,8 +391,11 @@ export class CodeGraph {
         resolver.initialize();
         resolver.runPostExtract();
         await resolver.resolveAndPersistBatched();
-        resolver.resolveChainedCallsViaConformance();
-        resolver.resolveDeferredThisMemberRefs();
+        // Await mandatory (see indexInMemory): unawaited, the async resolvers'
+        // deferred DB work races close() and throws uncaught ERR_INVALID_STATE,
+        // and the graph handle would be returned before resolution completes.
+        await resolver.resolveChainedCallsViaConformance();
+        await resolver.resolveDeferredThisMemberRefs();
       }
 
       const nodes = queries.getAllNodes();
