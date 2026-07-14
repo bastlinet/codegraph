@@ -29,6 +29,8 @@ export interface UnresolvedRef {
   /** `unresolved_refs.id` when loaded from the database — post-pass cleanup
    * targets exactly this row instead of every same-key sibling (#1269). */
   rowId?: number;
+  /** Call-site metadata from extraction */
+  metadata?: Record<string, unknown>;
 }
 
 /**

@@ -9,7 +9,7 @@ import { SqliteDatabase } from './sqlite-adapter';
 /**
  * Current schema version
  */
-export const CURRENT_SCHEMA_VERSION = 8;
+export const CURRENT_SCHEMA_VERSION = 9;
 
 /**
  * Migration definition
@@ -148,6 +148,20 @@ const migrations: Migration[] = [
         CREATE INDEX IF NOT EXISTS idx_unresolved_status ON unresolved_refs(status);
         CREATE INDEX IF NOT EXISTS idx_unresolved_failed_tail ON unresolved_refs(name_tail) WHERE status = 'failed';
       `);
+    },
+  },
+  {
+    version: 9,
+    description:
+      'Add unresolved_refs.metadata — call-site metadata (receiver, method, literal args) for the resolution pipeline',
+    up: (db) => {
+      // ALTER TABLE has no IF NOT EXISTS; a database created from the current
+      // schema.sql already carries this column, so guard for idempotency —
+      // same pattern as v8, and required by the v6 migration re-run test.
+      const cols = db.prepare('PRAGMA table_info(unresolved_refs)').all() as Array<{ name: string }>;
+      if (!cols.some((c) => c.name === 'metadata')) {
+        db.exec('ALTER TABLE unresolved_refs ADD COLUMN metadata TEXT');
+      }
     },
   },
 ];
